@@ -1,0 +1,90 @@
+pipeline:
+  name: Build Build-CI
+  identifier: Build_Build_CI_1676630501046
+  projectIdentifier: default_project
+  orgIdentifier: default
+  stages:
+    - stage:
+        name: Build BananaDroid
+        identifier: Build
+        type: CI
+        spec:
+          cloneCodebase: true
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Wealcome BananaDroid Build
+                  identifier: Echo_Welcome_Message
+                  spec:
+                    shell: Sh
+                    command: |
+                      echo "Welcome to Harness CI"
+                      echo "Wealcome BananaDroid Build"
+              - step:
+                  type: Run
+                  name: Setup-Environment
+                  identifier: SetupEnvironment
+                  spec:
+                    shell: Sh
+                    command: |
+                      sudo apt-get purge openjdk-* icedtea-* icedtea6-* && sudo ls 
+                      sudo apt-get update --fix-missing
+                      sudo apt-get -y upgrade
+                      sudo apt-get -y install openjdk-11-jdk
+                      sudo apt-get -y install git curl
+                      sudo apt-get -y install bison g++-multilib git gperf libxml2-utils make zlib1g-dev:i386 zip liblz4-tool libncurses5 libssl-dev bc flex curl python-is-python3 zlib1g-dev
+                      mkdir ~/bin
+                      curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+                      chmod a+x ~/bin/repo
+                  description: Setup Environment
+              - step:
+                  type: Run
+                  name: Clone Build Repo
+                  identifier: Clone_Build_Repo
+                  spec:
+                    shell: Sh
+                    command: |-
+                      repo init -u https://github.com/bananadroid/android_manifest.git -b 13
+                      git clone https://github.com/Think-Thought/device_realme_RMX1851 -b bananadroid ./device/realme/RMX1851
+                      git clone https://github.com/Think-Thought/android_vendor_RMX1851 ./vendor/realme/RMX1851
+                      repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --optimized-fetch --prune
+                      repo sync --force-sync
+              - step:
+                  type: Run
+                  name: Start Building BananaDroid
+                  identifier: Start_Building_BananaDroid
+                  spec:
+                    shell: Sh
+                    command: |-
+                      source build/envsetup.sh
+                      export USE_CCACHE=1
+                      export CCACHE_EXEC=/usr/bin/ccache
+                      ccache -M 50G
+                      export LC_ALL=C
+                      export CONFIG_STATE_NOTIFIER=y
+                      export SELINUX_IGNORE_NEVERALLOWS=true
+                      export ALLOW_MISSING_DEPENDENCIES=true
+                      lunch banana_RMX1851-userdebug
+                      m banana
+              - step:
+                  type: Run
+                  name: Uploading Build
+                  identifier: Uploading_Build
+                  spec:
+                    shell: Sh
+                    command: |-
+                      curl -sL https://git.io/file-transfer | sh
+                      ./transfer wet out/target/product/RMX1851/BananaDroid*.zip
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: account.Github_OAuth_1676628134632
+        repoName: Think-Thought/Build-CI
+        build: <+input>
