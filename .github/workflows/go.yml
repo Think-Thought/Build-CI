@@ -1,5 +1,5 @@
 name: Go
-## update
+# update
 on:
   push:
     branches: [ "main" ]
